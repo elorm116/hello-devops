@@ -26,7 +26,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: CICD_PIPELINE
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    # Define the image name HERE so it can see the secrets
     env:
       DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/hello-devops
     steps:
@@ -35,7 +34,7 @@ jobs:
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKER_TOKEN }} # Matches your screenshot
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
     - name: Build and push
       uses: docker/build-push-action@v5
       with:
@@ -65,4 +64,3 @@ jobs:
           docker stop app || true
           docker rm app || true
           docker run -d -p 80:5000 --name app ${{ env.DOCKER_IMAGE }}:latest
-          
