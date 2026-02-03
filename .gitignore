@@ -2,3 +2,10 @@ venv/
 __pycache__/
 *.pyc
 .DS_Store
+
+#Terraform files
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/.terraform.lock.hcl
+terraform/terraform.tfvars
