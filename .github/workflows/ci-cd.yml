@@ -6,73 +6,49 @@ on:
   pull_request:
     branches: [ main ]
 
-env:
-  DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/hello-devops
-
 jobs:
   test:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: '3.11'
-    
     - name: Install dependencies
       run: |
         python3 -m pip install --upgrade pip
-        pip3 install -r requirements.txt
-        pip3 install pytest
-    
+        pip3 install -r requirements.txt pytest
     - name: Run tests
-      run: |
-        python3 -m pytest tests/ -v
+      run: python3 -m pytest tests/ -v
 
   build:
     needs: test
     runs-on: ubuntu-latest
+    environment: CICD_PIPELINE
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
+    # Define the image name HERE so it can see the secrets
+    env:
+      DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/hello-devops
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-    
+    - uses: actions/checkout@v4
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-    
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.DOCKER_IMAGE }}
-        tags: |
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-    
+        password: ${{ secrets.DOCKER_TOKEN }} # Matches your screenshot
     - name: Build and push
       uses: docker/build-push-action@v5
       with:
         context: .
         push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        tags: ${{ env.DOCKER_IMAGE }}:latest
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    
+    environment: CICD_PIPELINE
+    env:
+      DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/hello-devops
     steps:
     - name: Deploy to Linode
       uses: appleboy/ssh-action@v1.0.0
@@ -81,14 +57,12 @@ jobs:
         username: root
         key: ${{ secrets.LINODE_SSH_KEY }}
         script: |
-          # 1. Install Docker if it's missing
           if ! command -v docker &> /dev/null; then
-            echo "Installing Docker..."
             curl -fsSL https://get.docker.com | sh
             systemctl enable --now docker
           fi
-          
           docker pull ${{ env.DOCKER_IMAGE }}:latest
           docker stop app || true
           docker rm app || true
           docker run -d -p 80:5000 --name app ${{ env.DOCKER_IMAGE }}:latest
+          
