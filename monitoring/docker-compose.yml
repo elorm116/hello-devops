@@ -18,7 +18,8 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - ES_JAVA_OPTS=-Xms256m -Xmx256m
+    mem_limit: 512m
     ports:
       - "9200:9200"
 
@@ -26,6 +27,9 @@ services:
     image: docker.elastic.co/logstash/logstash:8.12.2
     volumes:
       - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    environment:
+      - LOGSTASH_JAVA_OPTS=-Xms128m -Xmx128m
+    mem_limit: 256m
     ports:
       - "5044:5044"
     depends_on:
