@@ -10,3 +10,18 @@ terraform/*.tfstate
 terraform/*.tfstate.backup
 terraform/.terraform.lock.hcl
 terraform/terraform.tfvars
+terraform/tfplan
+#Monitoring files
+monitoring/data/
+monitoring/.prometheus/
+monitoring/.grafana/
+#IDE files
+.vscode/
+.idea/
+*.iml
+
+#OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+

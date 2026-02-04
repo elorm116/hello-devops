@@ -68,8 +68,15 @@ jobs:
               sudo systemctl enable --now docker
               sudo usermod -aG docker ec2-user
             fi
+            
+            # Deploy app container
             docker pull ${{ env.DOCKER_IMAGE }}:latest
             docker stop app || true
             docker rm app || true
             docker run -d -p 80:5000 --name app ${{ env.DOCKER_IMAGE }}:latest
+            
+            # Deploy monitoring stack
+            cd /opt/hello-devops
+            sudo git pull origin main || echo "Repo update skipped"
+            sudo docker compose -f monitoring/docker-compose.yml up -d || echo "Monitoring stack deployment skipped"
             echo "Deployment complete!"

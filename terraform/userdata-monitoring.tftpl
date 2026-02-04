@@ -8,6 +8,9 @@ systemctl start docker
 systemctl enable docker
 usermod -aG docker ec2-user
 
+# Install Docker Compose plugin
+dnf install -y docker-compose-plugin
+
 # Configure CloudWatch Agent
 cat > /opt/aws/amazon-cloudwatch-agent/etc/config.json <<'CWCONFIG'
 {
