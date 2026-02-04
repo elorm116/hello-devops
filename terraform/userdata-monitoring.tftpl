@@ -8,8 +8,9 @@ systemctl start docker
 systemctl enable docker
 usermod -aG docker ec2-user
 
-# Install Docker Compose plugin
-dnf install -y docker-compose-plugin
+# Install Docker Compose (standalone binary for Amazon Linux 2023)
+curl -L "https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
 
 # Configure CloudWatch Agent
 cat > /opt/aws/amazon-cloudwatch-agent/etc/config.json <<'CWCONFIG'
@@ -76,7 +77,7 @@ git clone https://github.com/elorm116/hello-devops.git || true
 cd hello-devops
 
 # Start monitoring stack with Docker Compose (Prometheus, Grafana, ELK)
-docker compose -f monitoring/docker-compose.yml up -d || echo "Monitoring stack optional - continue with app"
+/usr/local/bin/docker-compose -f monitoring/docker-compose.yml up -d || echo "Monitoring stack optional - continue with app"
 
 # Wait for Docker daemon to be ready
 sleep 5
