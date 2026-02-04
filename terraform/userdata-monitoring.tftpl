@@ -1,0 +1,85 @@
+#!/bin/bash
+set -e
+
+# System Updates & Docker Setup
+dnf update -y
+dnf install -y docker amazon-cloudwatch-agent git
+systemctl start docker
+systemctl enable docker
+usermod -aG docker ec2-user
+
+# Configure CloudWatch Agent
+cat > /opt/aws/amazon-cloudwatch-agent/etc/config.json <<'CWCONFIG'
+{
+  "metrics": {
+    "namespace": "HelloDevOps/EC2",
+    "append_dimensions": {
+      "InstanceId": "$${aws:InstanceId}",
+      "InstanceType": "$${aws:InstanceType}"
+    },
+    "metrics_collected": {
+      "mem": {
+        "measurement": [
+          {"name": "mem_used_percent", "rename": "MemoryUtilization", "unit": "Percent"}
+        ],
+        "metrics_collection_interval": 60
+      },
+      "disk": {
+        "measurement": [
+          {"name": "used_percent", "rename": "DiskUtilization", "unit": "Percent"}
+        ],
+        "metrics_collection_interval": 60,
+        "resources": ["/"]
+      },
+      "cpu": {
+        "measurement": [
+          {"name": "cpu_usage_idle", "rename": "CPUUtilization", "unit": "Percent"}
+        ],
+        "metrics_collection_interval": 60
+      }
+    }
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/cloud-init-output.log",
+            "log_group_name": "/aws/ec2/${project_name}",
+            "log_stream_name": "$${instance_id}/cloud-init-output"
+          },
+          {
+            "file_path": "/var/log/docker",
+            "log_group_name": "/aws/ec2/${project_name}",
+            "log_stream_name": "$${instance_id}/docker"
+          }
+        ]
+      }
+    }
+  }
+}
+CWCONFIG
+
+# Start CloudWatch Agent
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config \
+  -m ec2 \
+  -s \
+  -c file:/opt/aws/amazon-cloudwatch-agent/etc/config.json
+
+# Clone repo for monitoring stack
+cd /opt
+git clone https://github.com/elorm116/hello-devops.git || true
+cd hello-devops
+
+# Start monitoring stack with Docker Compose (Prometheus, Grafana, ELK)
+docker compose -f monitoring/docker-compose.yml up -d || echo "Monitoring stack optional - continue with app"
+
+# Wait for Docker daemon to be ready
+sleep 5
+
+# Launch Application Container
+docker pull elorm116/hello-devops:v1
+docker run -d -p 80:5000 --name app elorm116/hello-devops:v1
+
+echo "Setup complete! App running on port 80, Monitoring stack on ports 3000 (Grafana), 9090 (Prometheus), 5601 (Kibana)"

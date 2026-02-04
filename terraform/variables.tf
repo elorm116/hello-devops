@@ -25,3 +25,9 @@ variable "key_name" {
   description = "AWS key pair name for SSH access"
   type        = string
 }
+
+variable "alert_email" {
+  description = "Email address for CloudWatch alarm notifications (optional)"
+  type        = string
+  default     = ""
+}

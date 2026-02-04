@@ -1,4 +1,4 @@
-terraform {
+/*terraform {
   backend "s3" {
     bucket         = "hello-devops-terraform-state-mali"
     key            = "dev/terraform.tfstate"
@@ -6,4 +6,4 @@ terraform {
     encrypt        = true
     dynamodb_table = "terraform-state-lock"
   }
-}
+}*/
